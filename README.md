@@ -46,39 +46,39 @@ Pip (Python package installer)
 Follow the steps below to test the API using Postman:
 
 1. Add Books (POST /books)
-To add a new book to the system, use the POST {/books} endpoint.
-Request:
-  Method: {POST}
-  Endpoint: {/books}
-  Body:
-   ```json
-   {
-     "title": "Book Title",
-     "author": "Author Name",
-     "published_year": 2022
-   }
-  response:
-   ```json
-   {
-    "message": "Book added successfully"
-   }
+   To add a new book to the system, use the POST {/books} endpoint.
+   Request:
+    Method: {POST}
+    Endpoint: {/books}
+    Body:
+     ```json
+     {
+       "title": "Book Title",
+       "author": "Author Name",
+       "published_year": 2022
+     }
+    Response:
+     ```json
+     {
+       "message": "Book added successfully"
+     }
 
 2. Add Members (POST /members)
-To add a new member to the system, use the POST /members endpoint.
-Request:
-  Method: {POST}
-  Endpoint: /members
-  Body:
-   ```json
-   {
-     "name": "Member Name",
-     "email": "member@example.com"
-   }
-  response:
-   ```json
-   {
-    "message": "Member added successfully"
-   }
+   To add a new member to the system, use the POST /members endpoint.
+   Request:
+    Method: {POST}
+    Endpoint: /members
+    Body:
+     ```json
+     {
+       "name": "Member Name",
+       "email": "member@example.com"
+     }
+    Response:
+     ```json
+     {
+       "message": "Member added successfully"
+     }
 
 3. Issue a Book (PATCH /books/{book_id})
    To issue a book to a member, use the PATCH /books/{book_id} endpoint.
