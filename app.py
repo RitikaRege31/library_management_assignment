@@ -3,6 +3,8 @@ from flask import Flask, request, jsonify
 from database import get_db, close_db
 from models import create_tables
 from utils import generate_token, paginate
+from datetime import date
+
 
 app = Flask(__name__)
 
@@ -47,9 +49,34 @@ def books():
 
     cursor.execute(query, params)
     books = cursor.fetchall()
+
+    # Adding status: either 'not issued' or member_id
+    for book in books:
+        if book['member_id'] is None:
+            book['status'] = 'not issued'
+        else:
+            book['status'] = f'Issued to member ID: {book["member_id"]}'
+
     return jsonify(paginate(books, page, per_page))
 
-@app.route('/books/<int:book_id>', methods=['PUT', 'DELETE'])
+@app.route('/issued_books_by_member/<int:member_id>', methods=['GET'])
+def issued_books_by_member(member_id):
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+
+    query = """
+        SELECT * FROM books WHERE member_id = %s
+    """
+    cursor.execute(query, (member_id,))
+    books = cursor.fetchall()
+
+    # Adding status: issued to this member
+    for book in books:
+        book['status'] = f'Issued to member ID: {member_id}'
+
+    return jsonify(books)
+
+@app.route('/books/<int:book_id>', methods=['PUT', 'DELETE', 'GET', 'POST', 'PATCH'])
 def manage_book(book_id):
     db = get_db()
     cursor = db.cursor(dictionary=True)
@@ -65,7 +92,28 @@ def manage_book(book_id):
         cursor.execute("DELETE FROM books WHERE id=%s", (book_id,))
         db.commit()
         return jsonify({"message": "Book deleted successfully"})
+    elif request.method == 'PATCH':
+        # Assign a member to a book
+        data = request.json
+        member_id = data.get("member_id")
+        
+        # Validate if member_id exists in the members table (optional but recommended)
+        cursor.execute("SELECT * FROM members WHERE id = %s", (member_id,))
+        member = cursor.fetchone()
+        if not member:
+            return jsonify({"error": "Member not found"}), 404
 
+        cursor.execute("UPDATE books SET member_id = %s WHERE id = %s", (member_id, book_id))
+        db.commit()
+        return jsonify({"message": f"Book {book_id} issued to member {member_id}"}), 200
+
+    elif request.method == 'GET':
+        cursor.execute("SELECT * FROM books WHERE id = %s", (book_id,))
+        book = cursor.fetchone()
+        if not book:
+            return jsonify({"error": "Book not found"}), 404
+        return jsonify(book), 200
+    
 # CRUD operations for members
 @app.route('/members', methods=['GET', 'POST'])
 def members():
@@ -125,6 +173,23 @@ def validate():
         return jsonify({"message": "Valid token"})
     return jsonify({"error": "Invalid token"}), 401
 
+@app.route('/return_book/<int:book_id>', methods=['POST'])
+def return_book(book_id):
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+
+    # Check if the book exists and is currently issued to a member
+    cursor.execute("SELECT * FROM books WHERE id = %s AND member_id IS NOT NULL", (book_id,))
+    book = cursor.fetchone()
+
+    if not book:
+        return jsonify({"error": "Book is not issued or doesn't exist"}), 404
+
+    # Update the book to set member_id to NULL (i.e., return the book)
+    cursor.execute("UPDATE books SET member_id = NULL WHERE id = %s", (book_id,))
+    db.commit()
+
+    return jsonify({"message": f"Book {book_id} returned successfully"}), 200
 
 if __name__ == "__main__":
     app.run(debug=True)
