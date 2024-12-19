@@ -38,7 +38,7 @@ Pip (Python package installer)
              database="library_db"  # The database you created
           )
 5. Run the Application
-   The application will be available at {http://127.0.0.1:5000/books}
+   The application will be available at http://127.0.0.1:5000/books
    ```bash
    python app.py
 
